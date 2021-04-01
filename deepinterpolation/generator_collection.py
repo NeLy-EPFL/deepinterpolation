@@ -686,7 +686,7 @@ class SingleTifGenerator(DeepGenerator):
 
         average_nb_samples = 1000
 
-        local_data = self.raw_data[0:average_nb_samples, :, :].flatten()
+        local_data = self.raw_data[0:np.min([average_nb_samples, self.total_frame_per_movie]), :, :].flatten()
         local_data = local_data.astype("float32")
         self.local_mean = np.mean(local_data)
         self.local_std = np.std(local_data)
@@ -1055,3 +1055,205 @@ class MovieJSONGenerator(DeepGenerator):
         except:
             print("Issues with " + str(self.lims_id) + " at " + str(output_frame_index))
 
+class SingleTifGeneratorRandomX(DeepGenerator):
+    "Generates data for Keras"
+
+    def __init__(self, json_path):
+        "Initialization"
+        super().__init__(json_path)
+        self.mode = "random"
+
+        self.raw_data_file = self.json_data["train_path"]
+        self.batch_size = self.json_data["batch_size"]
+        self.pre_post_frame = self.json_data["pre_post_frame"]
+        self.pre_post_omission = self.json_data["pre_post_omission"]
+        self.start_frame = self.json_data["start_frame"]
+        try:
+            self.N_train_frames = self.json_data["N_train"]
+        except:
+            self.N_train_frames = 0
+
+        if "randomize" in self.json_data.keys():
+            self.randomize = self.json_data["randomize"]
+        else:
+            self.randomize = 1
+
+        # This is compatible with negative frames
+        self.end_frame = self.json_data["end_frame"]
+
+        with tifffile.TiffFile(self.raw_data_file) as tif:
+            self.raw_data = tif.asarray()
+
+        self.total_frame_per_movie = self.raw_data.shape[0]
+        self.frame_size_y = int(self.raw_data.shape[1])
+        self.frame_size_x = int(self.raw_data.shape[2])
+        self.frame_size_train = int(np.min([self.frame_size_y, self.frame_size_x]))
+        self.frame_offset = int(np.abs(self.frame_size_x-self.frame_size_y))
+
+        if self.end_frame < 0:
+            self.img_per_movie = (
+                self.total_frame_per_movie + 1 + self.end_frame - self.start_frame
+            )
+        elif self.total_frame_per_movie < self.end_frame:
+            self.img_per_movie = self.total_frame_per_movie + 1 - self.start_frame
+        else:
+            self.img_per_movie = self.end_frame + 1 - self.start_frame
+
+        average_nb_samples = 1000
+
+        local_data = self.raw_data[0:np.min([average_nb_samples, self.total_frame_per_movie]), :, :].flatten()
+        local_data = local_data.astype("float32")
+        self.local_mean = np.mean(local_data)
+        self.local_std = np.std(local_data)
+
+        self.list_samples = np.arange(
+            self.pre_post_frame + self.pre_post_omission + self.start_frame,
+            self.start_frame
+            + self.img_per_movie
+            - self.pre_post_frame
+            - self.pre_post_omission,
+        )
+
+        if self.randomize:
+            np.random.shuffle(self.list_samples)
+
+        if self.N_train_frames:
+            try:
+                self.list_samples = self.list_samples[:self.N_train_frames]
+                self.img_per_movie = np.minimum(self.img_per_movie,self.list_samples)
+            except IndexError:
+                print("tried to use more frames than are available")
+
+    def __len__(self):
+        "Denotes the total number of batches"
+        return int(np.floor(float(len(self.list_samples)) / self.batch_size))
+
+    def __getitem__(self, index):
+        # Generate indexes of the batch
+        if (index + 1) * self.batch_size > self.total_frame_per_movie:
+            indexes = np.arange(index * self.batch_size, self.img_per_movie)
+        else:
+            indexes = np.arange(index * self.batch_size, (index + 1) * self.batch_size)
+
+        shuffle_indexes = self.list_samples[indexes]
+
+        input_full = np.zeros(
+            [
+                self.batch_size,
+                self.frame_size_train,
+                self.frame_size_train,
+                self.pre_post_frame * 2,
+            ],
+            dtype="float32",
+        )
+        output_full = np.zeros(
+            [self.batch_size, self.frame_size_train, self.frame_size_train, 1],
+            dtype="float32",
+        )
+
+        for batch_index, frame_index in enumerate(shuffle_indexes):
+            X, Y = self.__data_generation__(frame_index)
+
+            input_full[batch_index, :, :, :] = X
+            output_full[batch_index, :, :, :] = Y
+
+        return input_full, output_full
+
+    def __data_generation__(self, index_frame):
+        # X : (n_samples, *dim, n_channels)
+        "Generates data containing batch_size samples"
+
+        input_full = np.zeros(
+            [
+                1,
+                self.frame_size_train,
+                self.frame_size_train,
+                self.pre_post_frame * 2,
+            ],
+            dtype="float32",
+        )
+        output_full = np.zeros(
+            [1, self.frame_size_train, self.frame_size_train, 1], dtype="float32"
+        )
+
+        input_index = np.arange(
+            index_frame - self.pre_post_frame - self.pre_post_omission,
+            index_frame + self.pre_post_frame + self.pre_post_omission + 1,
+        )
+        input_index = input_index[input_index != index_frame]
+
+        for index_padding in np.arange(self.pre_post_omission + 1):
+            input_index = input_index[input_index != index_frame - index_padding]
+            input_index = input_index[input_index != index_frame + index_padding]
+
+        # generate a random number to choose whether to take the left square or the right square of the image
+        if self.mode == "random":
+            # right_side = np.random.randint(low=0, high=2)
+            offset = np.random.randint(low=0, high=self.frame_offset)
+        elif self.mode == "leftrightcenterrandom":
+            where = np.random.randint(low=0, high=3)
+            if where == 0:
+                offset = 0
+            elif where == 1:
+                offset = self.frame_offset // 2
+            else:
+                offset = self.frame_offset
+        elif self.mode == "right":
+            # right_side = True
+            offset = self.frame_offset
+        elif self.mode == "left":
+            # right_side = False
+            offset = 0
+        elif self.mode == "center":
+            # right_side = False
+            offset = self.frame_offset // 2
+        else:
+            raise NotImplementedError
+        """
+        if right_side:
+            xindex = np.arange(self.frame_offset, self.frame_offset + self.frame_size_train)
+        else:
+            xindex = np.arange(0, self.frame_size_train)
+        """
+        xindex = np.arange(offset, offset + self.frame_size_train)
+        # print(self.raw_data.shape)
+        data_img_input = self.raw_data[input_index, :, :][:, :, xindex]
+        data_img_output = self.raw_data[index_frame, :, :][:, xindex]
+        # print(data_img_input.shape)
+        # print(data_img_output.shape)
+        data_img_input = np.swapaxes(data_img_input, 1, 2)
+        data_img_input = np.swapaxes(data_img_input, 0, 2)
+
+        img_in_shape = data_img_input.shape
+        img_out_shape = data_img_output.shape
+
+        data_img_input = (
+            data_img_input.astype("float32") - self.local_mean
+        ) / self.local_std
+        data_img_output = (
+            data_img_output.astype("float32") - self.local_mean
+        ) / self.local_std
+        input_full[0, : img_in_shape[0], : img_in_shape[1], :] = data_img_input
+        output_full[0, : img_out_shape[0], : img_out_shape[1], 0] = data_img_output
+
+        return input_full, output_full
+
+class SingleTifGeneratorLeftX(SingleTifGeneratorRandomX):
+    def __init__(self, json_path):
+        super().__init__(json_path)
+        self.mode = "left"
+
+class SingleTifGeneratorRightX(SingleTifGeneratorRandomX):
+    def __init__(self, json_path):
+        super().__init__(json_path)
+        self.mode = "right"
+
+class SingleTifGeneratorCenterX(SingleTifGeneratorRandomX):
+    def __init__(self, json_path):
+        super().__init__(json_path)
+        self.mode = "center"
+
+class SingleTifGeneratorLeftRightCenterRandomX(SingleTifGeneratorRandomX):
+    def __init__(self, json_path):
+        super().__init__(json_path)
+        self.mode = "leftrightcenterrandom"

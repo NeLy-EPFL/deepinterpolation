@@ -16,7 +16,7 @@ generator_param["train_path"] = os.path.join(
     pathlib.Path(__file__).parent.absolute(),
     "..",
     "sample_data",
-    "ophys_tiny_761605196.tif",
+    "crop_ophys_tiny_761605196.tif",  # "ophys_tiny_761605196.tif",
 )
 
 generator_param["batch_size"] = 5
@@ -33,14 +33,14 @@ inferrence_param["name"] = "core_inferrence"
 # Replace this path to where you stored your model
 inferrence_param[
     "model_path"
-] = "/Users/jeromel/Documents/Work documents/Allen Institute/Projects/Deep2P/repos/public/deepinterpolation/examples/unet_single_1024_mean_absolute_error_2020_11_12_21_33_2020_11_12_21_33/2020_11_12_21_33_unet_single_1024_mean_absolute_error_2020_11_12_21_33_model.h5"
+] = "/home/jbraun/bin/deepinterpolation/runs/unet_single_1024_mean_absolute_error_2021_03_15_12_55_2021_03_15_12_55/2021_03_15_12_55_unet_single_1024_mean_absolute_error_2021_03_15_12_55_model.h5"
 
 # Replace this path to where you want to store your output file
 inferrence_param[
     "output_file"
-] = "/Users/jeromel/test/ophys_tiny_continuous_deep_interpolation.h5"
+] = "/home/jbraun/bin/deepinterpolation/runs/unet_single_1024_mean_absolute_error_2021_03_15_12_55_2021_03_15_12_55/inference/ophys_out.h5"  # "/Users/jeromel/test/ophys_tiny_continuous_deep_interpolation.h5"
 
-jobdir = "/Users/jeromel/test/"
+jobdir = "/home/jbraun/bin/deepinterpolation/runs/unet_single_1024_mean_absolute_error_2021_03_15_12_55_2021_03_15_12_55/inference"  # "/Users/jeromel/test/"
 
 try:
     os.mkdir(jobdir)

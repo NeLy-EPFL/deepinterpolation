@@ -1,7 +1,13 @@
+import os, sys
+FILE_PATH = os.path.realpath(__file__)
+EXAMPLES_PATH, _ = os.path.split(FILE_PATH)
+MODULE_PATH, _ = os.path.split(EXAMPLES_PATH)
+sys.path.append(MODULE_PATH)
+
 import deepinterpolation as de
-import sys
+# import sys
 from shutil import copyfile
-import os
+# import os
 from deepinterpolation.generic import JsonSaver, ClassLoader
 import datetime
 from typing import Any, Dict
@@ -19,7 +25,7 @@ generator_test_param = {}
 
 # An epoch is defined as the number of batches pulled from the dataset. Because our datasets are VERY large. Often, we cannot
 # go through the entirity of the data so we define an epoch slightly differently than is usual.
-steps_per_epoch = 5
+steps_per_epoch = 5  # 5
 
 # Those are parameters used for the Validation test generator. Here the test is done on the beginning of the data but
 # this can be a separate file
@@ -27,14 +33,14 @@ generator_test_param["type"] = "generator"  # type of collection
 generator_test_param["name"] = "SingleTifGenerator"  # Name of object in the collection
 generator_test_param[
     "pre_post_frame"
-] = 30  # Number of frame provided before and after the predicted frame
+] = 30  # 30  # Number of frame provided before and after the predicted frame
 generator_test_param["train_path"] = os.path.join(
     pathlib.Path(__file__).parent.absolute(),
     "..",
     "sample_data",
-    "ophys_tiny_761605196.tif",
+    "crop_ophys_tiny_761605196.tif",  # "ophys_tiny_761605196.tif", subsamp_ophys_tiny_761605196
 )
-generator_test_param["batch_size"] = 5
+generator_test_param["batch_size"] = 5  # 5
 generator_test_param["start_frame"] = 0
 generator_test_param["end_frame"] = 99
 generator_test_param[
@@ -46,14 +52,14 @@ generator_test_param["steps_per_epoch"] = steps_per_epoch
 generator_param["type"] = "generator"
 generator_param["steps_per_epoch"] = steps_per_epoch
 generator_param["name"] = "SingleTifGenerator"
-generator_param["pre_post_frame"] = 30
+generator_param["pre_post_frame"] = 30  # 30
 generator_param["train_path"] = os.path.join(
     pathlib.Path(__file__).parent.absolute(),
     "..",
     "sample_data",
-    "ophys_tiny_761605196.tif",
+    "crop_ophys_tiny_761605196.tif",  # "ophys_tiny_761605196.tif", subsamp_ophys_tiny_761605196
 )
-generator_param["batch_size"] = 5
+generator_param["batch_size"] = 5  # 5
 generator_param["start_frame"] = 0
 generator_param["end_frame"] = 99
 generator_param["pre_post_omission"] = 0
@@ -73,7 +79,7 @@ training_param["steps_per_epoch"] = steps_per_epoch
 training_param[
     "period_save"
 ] = 25  # network model is potentially saved during training between a regular nb epochs
-training_param["nb_gpus"] = 0
+training_param["nb_gpus"] = 1  # 0
 training_param["apply_learning_decay"] = 0
 training_param[
     "nb_times_through_data"
@@ -95,7 +101,7 @@ training_param["model_string"] = (
 
 # Where do you store ongoing training progress
 jobdir = os.path.join(
-    "/Users/jeromel/test", training_param["model_string"] + "_" + run_uid,
+    "/home/jbraun/bin/deepinterpolation/runs", training_param["model_string"] + "_" + run_uid,
 )
 training_param["output_dir"] = jobdir
 
@@ -145,7 +151,10 @@ training_class = trainer_obj.find_and_build()(
 )
 
 # Start training. This can take very long time.
+print("START TRAINING")
 training_class.run()
+
+print("FINISHED TRAINING")
 
 # Finalize and save output of the training.
 training_class.finalize()

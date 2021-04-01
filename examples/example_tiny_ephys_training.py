@@ -95,7 +95,7 @@ training_param["model_string"] = (
 
 # Where do you store ongoing training progress
 jobdir = os.path.join(
-    "/Users/jeromel/test", training_param["model_string"] + "_" + run_uid,
+    "/home/jbraun/bin/deepinterpolation/runs", training_param["model_string"] + "_" + run_uid,
 )
 training_param["output_dir"] = jobdir
 

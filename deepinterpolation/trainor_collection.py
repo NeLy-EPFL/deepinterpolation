@@ -159,6 +159,7 @@ class core_trainer:
 
     def initialize_network(self):
         local_size = self.local_generator.get_input_size()
+        print("\n\n#####: local_size = {}\n\n".format(local_size))
 
         input_img = Input(shape=local_size)
         self.local_model = Model(input_img, self.network_obj(input_img))

@@ -147,6 +147,7 @@ class core_inferrence:
     def run(self):
         final_shape = [self.nb_datasets * self.batch_size]
         final_shape.extend(self.indiv_shape)
+        print("########## Final shape: {}".format(final_shape))
 
         chunk_size = [1]
         chunk_size.extend(self.indiv_shape)
