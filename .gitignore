@@ -1,0 +1,16 @@
+.vscode/
+build/
+**/__pycache__
+deepinterpolation.egg-info/
+dist/
+**/.ipynb_checkpoints
+runs/
+sample_data/denoised*
+sample_data/dff*
+sample_data/compare*
+sample_data/210301*
+sample_data/longterm*
+sample_data/ABO*
+sample_data/R57C10*
+sample_data/comp*
+tmpdata/

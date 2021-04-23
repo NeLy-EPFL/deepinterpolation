@@ -24,7 +24,11 @@ def find_model(run_dir):
     return [str(dir) for dir in Path(run_dir).rglob("*model.h5")][0]
 
 def find_out_h5(run_dir):
-    return [str(dir) for dir in Path(os.path.join(run_dir, "inference")).rglob("*.h5")][0]
+    files = [str(dir) for dir in Path(os.path.join(run_dir, "inference")).rglob("*.h5")]
+    if len(files):
+        return files[0]
+    print("Warning: inference out file not found.")
+    return []
 
 def find_old_models(run_dir):
     models = [str(dir) for dir in Path(run_dir).rglob("*.h5")]
@@ -292,7 +296,10 @@ def clean_up(run_dir, tmp_data_dirs):
     _ = [os.remove(old_model) for old_model in old_models]
 
     tmp_out_h5 = find_out_h5(run_dir)
-    os.remove(tmp_out_h5)
+    if isinstance(tmp_out_h5, list):
+        _ = [os.remove(_) for _ in tmp_out_h5]
+    else:
+        os.remove(tmp_out_h5)
 
 def copy_run_dir(run_dir, target_dir, delete_tmp=False):
     if not os.path.isdir(target_dir):
@@ -305,8 +312,9 @@ def copy_run_dir(run_dir, target_dir, delete_tmp=False):
 
     
 if __name__ == "__main__":
-    ONEDS_COMPLETE = True
+    ONEDS_COMPLETE = False
     COMPARE = False
+    TEST_CLEANUP = True
 
     if ONEDS_COMPLETE:
         data_dir = "/mnt/NAS/JB/210301_J1xCI9/Fly1/012_xz/processed/green_com_warped.tif"
@@ -345,4 +353,16 @@ if __name__ == "__main__":
             run_dir = train(data_tif, run_base_dir=run_base_dir, run_identifier=run_identifier)
             inference(data_tif, run_dir=run_dir, tif_out_dirs=out_dir)
             gc.collect()
+
+    if TEST_CLEANUP:
+        fly_dir = "/mnt/NAS/JB/210301_J1xCI9/Fly1"
+        trial_dirs = [os.path.join(fly_dir, "{:03d}_xz".format(i+1)) for i in range(12)]
+        tmp_dir = "/home/jbraun/tmp/deepinterpolation/runs"
+        tmp_dirs = [os.path.join(tmp_dir, folder) for folder in os.listdir(tmp_dir)]
+        i_trials = [int(tmp_d[60:62])-1 for tmp_d in tmp_dirs]
+        i_trials_sort = np.argsort(i_trials)
+        for i, trial_dir in enumerate(trial_dirs):
+            tmp_run_dir = tmp_dirs[i_trials_sort[i]]
+            copy_run_dir(tmp_run_dir, os.path.join(trial_dir, "processed", "denoising_run"),
+                         delete_tmp=False)
 
