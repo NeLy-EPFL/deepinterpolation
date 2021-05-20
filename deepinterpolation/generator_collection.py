@@ -1069,6 +1069,10 @@ class SingleTifGeneratorRandomX(DeepGenerator):
         self.pre_post_omission = self.json_data["pre_post_omission"]
         self.start_frame = self.json_data["start_frame"]
         try:
+            self.limited_ram = self.json_data["limited_ram"]
+        except:
+            self.limited_ram = 320*320
+        try:
             self.N_train_frames = self.json_data["N_train"]
         except:
             self.N_train_frames = 0
@@ -1088,6 +1092,14 @@ class SingleTifGeneratorRandomX(DeepGenerator):
         self.frame_size_y = int(self.raw_data.shape[1])
         self.frame_size_x = int(self.raw_data.shape[2])
         self.frame_size_train = int(np.min([self.frame_size_y, self.frame_size_x]))
+        if self.limited_ram is not None:
+            train_size = self.frame_size_y * self.frame_size_train
+            if train_size > self.limited_ram:
+                print("Reducing training image size in x in order to fit batch into limited RAM.")
+                max_x = self.limited_ram // self.frame_size_y
+                mod = max_x % 32
+                self.frame_size_train = max_x - mod
+                print("New training size: {}x{}".format(self.frame_size_y, self.frame_size_train))
         self.frame_offset = int(np.abs(self.frame_size_x-self.frame_size_y))
 
         if self.end_frame < 0:
@@ -1140,14 +1152,14 @@ class SingleTifGeneratorRandomX(DeepGenerator):
         input_full = np.zeros(
             [
                 self.batch_size,
-                self.frame_size_train,
+                self.frame_size_y,
                 self.frame_size_train,
                 self.pre_post_frame * 2,
             ],
             dtype="float32",
         )
         output_full = np.zeros(
-            [self.batch_size, self.frame_size_train, self.frame_size_train, 1],
+            [self.batch_size, self.frame_size_y, self.frame_size_train, 1],
             dtype="float32",
         )
 
@@ -1166,14 +1178,14 @@ class SingleTifGeneratorRandomX(DeepGenerator):
         input_full = np.zeros(
             [
                 1,
-                self.frame_size_train,
+                self.frame_size_y,
                 self.frame_size_train,
                 self.pre_post_frame * 2,
             ],
             dtype="float32",
         )
         output_full = np.zeros(
-            [1, self.frame_size_train, self.frame_size_train, 1], dtype="float32"
+            [1, self.frame_size_y, self.frame_size_train, 1], dtype="float32"
         )
 
         input_index = np.arange(
