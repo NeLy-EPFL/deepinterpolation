@@ -1,4 +1,4 @@
-import os
+import os, sys
 import shutil
 from pathlib import Path
 import numpy as np
@@ -57,6 +57,7 @@ class DefaultInterpolationParams:
         self.steps_per_epoch = 5
         self.nb_gpus = 1
         self.nb_workers = 16
+        self.limited_ram = 320*320
 
         # inference parameters
         self.inference_generator_name = "SingleTifGenerator"
@@ -126,6 +127,7 @@ def train(train_data_tifs, run_base_dir, run_identifier, test_data_tifs=None, pa
     generator_param["end_frame"] = params.train_end
     generator_param["N_train"] = params.N_frames_per_trial
     generator_param["pre_post_omission"] = params.pre_post_omission
+    generator_param["limited_ram"] = params.limited_ram
 
     # define testing generator parameters
     generator_test_param["type"] = "generator"
@@ -136,6 +138,7 @@ def train(train_data_tifs, run_base_dir, run_identifier, test_data_tifs=None, pa
     generator_test_param["end_frame"] = params.test_end
     generator_test_param["pre_post_omission"] = params.pre_post_omission
     generator_test_param["steps_per_epoch"] = params.steps_per_epoch
+    generator_test_param["limited_ram"] = params.limited_ram
 
     # Those are parameters used for the network topology
     network_param["type"] = "network"
@@ -302,12 +305,25 @@ def clean_up(run_dir, tmp_data_dirs):
         os.remove(tmp_out_h5)
 
 def copy_run_dir(run_dir, target_dir, delete_tmp=False):
-    if not os.path.isdir(target_dir):
-        os.makedirs(target_dir)
-
-    shutil.copytree(src=run_dir, dst=target_dir, dirs_exist_ok=True)
-    if delete_tmp:
-        shutil.rmtree(run_dir)
+    # if not os.path.isdir(target_dir):
+    #     os.makedirs(target_dir)
+    # TODO: Include fix that allows copying if directory exists in <3.8
+    try:
+        version = sys.version_info
+        if version[0] >= 3 and version[1] >= 8:  # check python version number
+            shutil.copytree(src=run_dir, dst=target_dir, dirs_exist_ok=True)
+        else:
+            shutil.copytree(src=run_dir, dst=target_dir)
+        if delete_tmp:
+            shutil.rmtree(run_dir)
+    except FileExistsError:
+        print("Copying from \n"+run_dir+" to \n"+target_dir+\
+              "\ndid not work because the target directory already exists." +\
+              "\nPlease try again manually.")
+    except TypeError:
+        print("Copying from \n"+run_dir+" to \n"+target_dir+\
+              "\ndid not work because of an error with the python version (this code works with python >=3.8)." +\
+              "\nPlease try again manually.")
 
 
     
