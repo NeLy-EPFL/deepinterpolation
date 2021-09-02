@@ -662,6 +662,11 @@ class SingleTifGenerator(DeepGenerator):
         self.pre_post_omission = self.json_data["pre_post_omission"]
         self.start_frame = self.json_data["start_frame"]
 
+        try:
+            self.N_train_frames = self.json_data["N_train"]
+        except:
+            self.N_train_frames = 0
+
         if "randomize" in self.json_data.keys():
             self.randomize = self.json_data["randomize"]
         else:
@@ -701,6 +706,13 @@ class SingleTifGenerator(DeepGenerator):
 
         if self.randomize:
             np.random.shuffle(self.list_samples)
+
+        if self.N_train_frames:
+            try:
+                self.list_samples = self.list_samples[:self.N_train_frames]
+                self.img_per_movie = np.minimum(self.img_per_movie,self.list_samples)
+            except IndexError:
+                print("tried to use more frames than are available")
 
     def __len__(self):
         "Denotes the total number of batches"
