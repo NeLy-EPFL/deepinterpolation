@@ -234,7 +234,7 @@ def train(train_data_tifs, run_base_dir, run_identifier, test_data_tifs=None, pa
     if return_dict_run_dir is not None:
         try:
             return_dict_run_dir[0] = run_dir
-            return return_value_run_dir
+            return return_dict_run_dir
         except:
             pass
     return run_dir
