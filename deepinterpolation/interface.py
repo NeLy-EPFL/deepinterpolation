@@ -5,6 +5,7 @@ import numpy as np
 import h5py
 import datetime
 import gc
+import multiprocessing as mp
 
 import utils2p
 
@@ -95,7 +96,8 @@ def prepare_data(train_data_tifs, out_data_tifs, offset=(None,None), size=(320, 
             os.makedirs(path)
         utils2p.save_img(out_path, stack)
 
-def train(train_data_tifs, run_base_dir, run_identifier, test_data_tifs=None, params=DefaultInterpolationParams()):
+def train(train_data_tifs, run_base_dir, run_identifier, test_data_tifs=None, params=DefaultInterpolationParams(),
+          return_dict_run_dir=None):
     if not isinstance(train_data_tifs, list):
         train_data_tifs = [train_data_tifs]
     N_train_files = len(train_data_tifs)
@@ -229,6 +231,12 @@ def train(train_data_tifs, run_base_dir, run_identifier, test_data_tifs=None, pa
     # Finalize and save output of the training.
     training_class.finalize()
 
+    if return_dict_run_dir is not None:
+        try:
+            return_dict_run_dir[0] = run_dir
+            return return_value_run_dir
+        except:
+            pass
     return run_dir
 
 
