@@ -74,6 +74,9 @@ def prepare_data(train_data_tifs, out_data_tifs, offset=(None,None), size=(320, 
     N_frames, N_y, N_x = stacks[0].shape
     image_size = [N_y, N_x]
 
+    if size is None:
+        size = (N_y, N_x)
+
     if not isinstance(offset, list):
         offset = [offset]
 
