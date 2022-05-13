@@ -17,6 +17,9 @@ Installation
 
 The following outlines how to install on your local machine. This should take no more than a few minutes. This was tested on a macOS Catalina but should be adapted depending on your final environment (institution cluster, AWS EC2 instance, ...). Tensorflow made a lot of progress lately to install GPU dependencies. However, you might have to consult tensorflow documentation to enable your GPU. The small training example below works on both CPU and GPU architecture (ie. even a small macbook). If you are not familiar with using deep learning, we recommend to play with smaller datasets first, such as the example Neuropixels data provided. 
 
+The instructions are modified such that the code on the adapttoR57C10 branch is used.
+If supposed to use together with the twoppp package, skip steps 3 and 4 and instead activate the twoppp37 environment.
+
 1. Clone the repository locally on a directory 'local_dir'
 
 .. code-block:: bash
@@ -41,13 +44,19 @@ The following outlines how to install on your local machine. This should take no
 
 	conda activate local_env
 
-5. install necessary packages
+5. switch to adapttoR57C10 branch
+
+.. code-block:: bash
+
+	git checkout adapttoR57C10
+
+6. install necessary packages
 
 .. code-block:: bash
 
 	make init
 
-6. install deepinterpolation package
+7. install deepinterpolation package
 
 .. code-block:: bash
 
