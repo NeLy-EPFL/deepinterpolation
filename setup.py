@@ -9,6 +9,10 @@ with open("README.rst") as f:
 with open("LICENSE") as f:
     license = f.read()
 
+with open("requirements.txt", "r") as f:
+    requirements = f.read().splitlines()
+    requirements = [l for l in requirements if not l.startswith('#')]
+
 setup(
     name="deepinterpolation",
     version="0.1.1",
@@ -19,5 +23,6 @@ setup(
     url="https://github.com/AllenInstitute/deepinterpolation",
     license=license,
     packages=find_packages(exclude=("tests", "docs")),
+    install_requires=requirements,
 )
 
