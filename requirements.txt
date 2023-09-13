@@ -3,7 +3,7 @@ tensorflow-estimator
 nibabel
 h5py
 matplotlib
-numpy==1.16.0
+numpy>=1.16.0
 python-dateutil
 scipy==1.4.1
 tifffile
